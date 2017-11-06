@@ -192,41 +192,42 @@ def _book_list(request, queryset, qtype=None, list_by='latest', **kwargs):
     return render(request, 'books/book_list.html',
                   context=extra_context)
 
-def _author_list(request, queryset, qtype=None, list_by='latest', **kwargs):
+def _author_list(request, queryset_, qtype=None, list_by='latest', **kwargs):
     """
-    Filter the books, paginate the result, and return either a HTML
-    book list, or a atom+xml OPDS catalog.
-
+    Filter the authors, paginate the result, and return either a HTML
+    author list, or a atom+xml OPDS catalog.
     """
     q = request.GET.get('q')
-    # search_all = request.GET.get('search-all') == 'on'
-    # search_title = request.GET.get('search-title') == 'on'
+    search_all = request.GET.get('search-all') == 'on'
+    search_title = request.GET.get('search-title') == 'on'
     search_author = request.GET.get('search-author') == 'on'
 
-    # context_instance = RequestContext(request)
-    # user = resolve_variable('user', context_instance)
-    # if not user.is_authenticated():
-    #     queryset = queryset.filter(a_status = BOOK_PUBLISHED)
+    queryset = Book.objects.all()
+    user = request.user
+    if not user.is_authenticated():
+        queryset = queryset.filter(a_status = BOOK_PUBLISHED)
 
-    # published_books_count = Book.objects.filter(a_status = BOOK_PUBLISHED).count()
-    # unpublished_books_count = Book.objects.exclude(a_status = BOOK_PUBLISHED).count()
+    published_books_count = Book.objects.filter(a_status = BOOK_PUBLISHED).count()
+    unpublished_books_count = Book.objects.exclude(a_status = BOOK_PUBLISHED).count()
 
     # If no search options are specified, assumes search all, the
     # advanced search will be used:
-    # if not search_all and not search_title and not search_author:
-    #     search_all = True
+    if not search_all and not search_title and not search_author:
+        search_all = True
 
-    # FIXME
     # If search queried, modify the queryset with the result of the
     # search:
-    # if q is not None:
-    #     if search_all:
-    #         queryset = advanced_search(queryset, q)
-    #     else:
-    #         queryset = simple_search(queryset, q,
-    #                                  search_title, search_author)
+    if q is not None:
+        if search_all:
+            queryset = advanced_search(queryset, q)
+        else:
+            queryset = simple_search(queryset, q,
+                                     search_title, search_author)
 
-    paginator = Paginator(queryset, BOOKS_PER_PAGE)
+    books = queryset.values_list('a_author', flat=True)
+    queryset = Author.objects.all().order_by('a_author').filter(pk__in=books)
+
+    paginator = Paginator(queryset, AUTHORS_PER_PAGE)
     page = int(request.GET.get('page', '1'))
 
     try:
@@ -246,16 +247,16 @@ def _author_list(request, queryset, qtype=None, list_by='latest', **kwargs):
     extra_context = dict(kwargs)
     extra_context.update({
         'author_list': page_obj.object_list,
-        # 'published_books': published_books_count,
-        # 'unpublished_books': unpublished_books_count,
+        'published_books': published_books_count,
+        'unpublished_books': unpublished_books_count,
         'q': q,
         'paginator': paginator,
         'page_obj': page_obj,
-        # 'search_title': search_title,
+        'search_title': search_title,
         'search_author': search_author,
-        'list_by': list_by,
+        # 'list_by': list_by,
         'qstring': qstring,
-        # 'allow_public_add_book': settings.ALLOW_PUBLIC_ADD_BOOKS
+        'allow_public_add_book': settings.ALLOW_PUBLIC_ADD_BOOKS
     })
     return render(request, 'authors/author_list.html',
                   context=extra_context)
