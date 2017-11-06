@@ -279,10 +279,7 @@ def by_title(request, qtype=None, author_id=None):
     return _book_list(request, queryset, qtype, list_by='by-title')
 
 def by_author(request, qtype=None):
-    #queryset = Book.objects.all().order_by('a_author')
-    #return _book_list(request, queryset, qtype, list_by='by-author')
     queryset = Author.objects.all().order_by('a_author')
-    print("stuff")
     return _author_list(request, queryset, qtype, list_by='by-author')
 
 def by_tag(request, tag, qtype=None):
