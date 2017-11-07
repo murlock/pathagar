@@ -36,10 +36,7 @@ from django.views.generic.edit import DeleteView
 from pathagar.settings import BOOKS_PER_PAGE, AUTHORS_PER_PAGE
 from django.conf import settings
 
-# OLD ---------------
-from tagging.models import Tag
-# --------------- OLD
-from taggit.models import Tag as tTag
+from taggit.models import Tag as Tag
 
 from sendfile import sendfile
 
@@ -107,11 +104,10 @@ def tags(request, qtype=None, group_slug=None):
         context.update({'tag_group': tag_group})
         context.update({'tag_list': Tag.objects.get_for_object(tag_group)})
     else:
-        context.update({'tag_list': tTag.objects.all()})
+        context.update({'tag_list': Tag.objects.all()})
 
     tag_groups = TagGroup.objects.all()
     context.update({'tag_group_list': tag_groups})
-
 
     # Return OPDS Atom Feed:
     if qtype == 'feed':
@@ -286,7 +282,7 @@ def by_author(request, qtype=None):
 def by_tag(request, tag, qtype=None):
     """ displays a book list by the tag argument """
     # get the Tag object
-    tag_instance = tTag.objects.get(name=tag) # TODO replace as Tag when django-tagging is removed
+    tag_instance = Tag.objects.get(name=tag)
 
     # if the tag does not exist, return 404
     if tag_instance is None:

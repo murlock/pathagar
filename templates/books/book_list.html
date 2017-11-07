@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{% load tagging_tags %}
 
 {% block title %}Welcome to the Pathagar book server{% endblock %}
 
@@ -57,7 +56,6 @@
         <span class="alt">{{ book.a_author }}</span>
     </a>
   </h2>
-  {% tags_for_object book as tag_list %}
   {% if book.tags.count != 0 %}
     <div class="span-10">
     {% for tag in book.tags.all %}
