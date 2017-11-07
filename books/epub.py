@@ -17,7 +17,7 @@
 
 import zipfile
 import tempfile
-import os, os.path
+import os
 from lxml import etree
 import shutil
 
@@ -49,12 +49,14 @@ class Epub(object):
 
     def __del__(self):
         if self._tempdir:
-            raise Exception("you should call close method to clean up stuff")
+            self.close()
 
     def _unzip(self):
-        #self._zobject.extractall(path = self._tempdir) # This is broken upto python 2.7
+        # This is broken upto python 2.7
+        # self._zobject.extractall(path = self._tempdir)
         for name in self._zobject.namelist():
-            # Some weird zip file entries start with a slash, and we don't want to write to the root directory
+            # Some weird zip file entries start with a slash,
+            # and we don't want to write to the root directory
             name = name.lstrip(os.path.sep)
             if name.endswith(os.path.sep) or name.endswith('\\'):
                 os.makedirs(os.path.join(self._tempdir, name))
@@ -77,7 +79,6 @@ class Epub(object):
             self._basepath = ''
 
         containerfile.close()
-
 
     def _get_ncx(self):
         opffile = self._zobject.open(self._opfpath)
@@ -112,7 +113,8 @@ class Epub(object):
         mtypefile = self._zobject.open('mimetype')
         mimetype = mtypefile.readline().decode('utf-8')
 
-        if not mimetype.startswith('application/epub+zip'): # Some files seem to have trailing characters
+        # Some files seem to have trailing characters
+        if not mimetype.startswith('application/epub+zip'):
             return False
 
         return True
@@ -144,6 +146,7 @@ class Epub(object):
         Cleans up (closes open zip files and deletes uncompressed content of Epub.
         Please call this when a file is being closed or during application exit.
         '''
-        self._zobject.close()
+        if self._zobject:
+            self._zobject.close()
         shutil.rmtree(self._tempdir)
         self._tempdir = None
