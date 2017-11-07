@@ -63,11 +63,6 @@ MEDIA_URL = '/static_media/'
 
 SECRET_KEY = '7ks@b7+gi^c4adff)6ka228#rd4f62v*g_dtmo*@i62k)qn=cs'
 
-# TEMPLATE_LOADERS = (
-#     'django.template.loaders.filesystem.Loader',
-#     'django.template.loaders.app_directories.Loader',
-# )
-
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -80,9 +75,6 @@ ROOT_URLCONF = 'pathagar.urls'
 
 INTERNAL_IPS = ('127.0.0.1',)
 
-# TEMPLATE_DIRS = (
-#     os.path.join(os.path.dirname(__file__), 'templates'),
-# )
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -108,6 +100,8 @@ STATICFILES_DIRS = (
 )
 
 ALLOW_USER_COMMENTS = False
+
+TAGGIT_CASE_INSENSITIVE = True
 
 INSTALLED_APPS = (
     'django.contrib.auth',
