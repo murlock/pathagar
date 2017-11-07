@@ -163,7 +163,8 @@ class PathagarBook(StaticLiveServerTestCase):
         elem.send_keys(self.AUTHOR)
 
         elem = drv.find_element_by_id("id_tags")
-        elem.send_keys("selenium")
+        tags = ["lovecraft", "horror", "Cthulhu"]
+        elem.send_keys(" ".join(tags))
 
         elem = drv.find_element_by_id("id_a_summary")
         elem.send_keys("A little summary")
@@ -172,6 +173,12 @@ class PathagarBook(StaticLiveServerTestCase):
         elem.send_keys(Keys.RETURN)
 
         self.wait_url(r'^http://[a-zA-Z0-9:]+/book/\d+/view$', regex=True)
+
+
+        elem = drv.find_element_by_id("tags")
+        elems = elem.find_elements_by_css_selector("a.button")
+        items = [ x.text for x in elems ]
+        self.assertEqual(sorted(items), sorted(tags))
 
         latest_url = str(self.live_server_url) + str(reverse_lazy("latest"))
         drv.get(latest_url)
@@ -202,6 +209,7 @@ class PathagarBook(StaticLiveServerTestCase):
         self.book_search([(self.AUTHOR, ["The Dunwich Horror"]),
                           ("Arthur", [])],
                          option='search-author')
+
         # Search authors
         author_url = str(self.live_server_url) + str(reverse_lazy("by_author"))
         drv.get(author_url)
@@ -229,3 +237,5 @@ class PathagarBook(StaticLiveServerTestCase):
         self.author_search([(self.AUTHOR[0:5], [self.AUTHOR]),
                             ("Arthur", [])],
                            option='search-author')
+
+        # Tags
