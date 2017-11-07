@@ -36,7 +36,8 @@ from django.views.generic.edit import DeleteView
 from pathagar.settings import BOOKS_PER_PAGE, AUTHORS_PER_PAGE
 from django.conf import settings
 
-from taggit.models import Tag as Tag
+from taggit.models import Tag
+from django.core.exceptions import ObjectDoesNotExist
 
 from sendfile import sendfile
 
@@ -282,10 +283,9 @@ def by_author(request, qtype=None):
 def by_tag(request, tag, qtype=None):
     """ displays a book list by the tag argument """
     # get the Tag object
-    tag_instance = Tag.objects.get(name=tag)
-
-    # if the tag does not exist, return 404
-    if tag_instance is None:
+    try:
+        tag_instance = Tag.objects.get(name=tag)
+    except ObjectDoesNotExist:
         raise Http404()
 
     # Get a list of books that have the requested tag
@@ -296,4 +296,3 @@ def by_tag(request, tag, qtype=None):
 def most_downloaded(request, qtype=None):
     queryset = Book.objects.all().order_by('-downloads')
     return _book_list(request, queryset, qtype, list_by='most-downloaded')
-
