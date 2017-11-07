@@ -1,3 +1,5 @@
+import os
+
 from django.test import TestCase
 from django.core.management import call_command, CommandError
 
@@ -13,13 +15,21 @@ class EpubTest(TestCase):
         self.assertEqual(info.creator, "H. P. Lovecraft")
         epub.close()
 
+    def test_remove_temporary_dir(self):
+        basedir = ''
+        if True:
+            epub = Epub("examples/The Dunwich Horror.epub")
+            basedir = epub.get_basedir()
+            del epub
+        self.assertFalse(os.path.exists(basedir))
+
 
 class AddEpubTest(TestCase):
     def test_01_import_commandline(self):
         nb_book = len(Book.objects.all())
         self.assertEqual(nb_book, 0)
 
-        args = ["examples/"]
+        args = ["examples/The Dunwich Horror.epub"]
         opts = {}
         call_command('addepub', *args, **opts)
 
@@ -32,7 +42,7 @@ class AddEpubTest(TestCase):
 
     def test_02_import_duplicated(self):
         # try to import duplicated epub
-        args = ["examples/"]
+        args = ["examples/The Dunwich Horror.epub"]
         opts = {}
         call_command('addepub', *args, **opts)
         self.assertRaises(CommandError, call_command,
