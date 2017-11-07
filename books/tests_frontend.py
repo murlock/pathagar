@@ -1,6 +1,8 @@
+from hashlib import md5
 import os
 from time import sleep
 from urllib.parse import quote_plus
+from urllib.request import urlopen
 import re
 
 from selenium import webdriver
@@ -11,7 +13,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.urls import reverse_lazy
 from django.contrib.auth.models import User
 
-from books.models import Author
+from books.models import Author, TagGroup
 
 
 class PathagarBook(StaticLiveServerTestCase):
@@ -31,8 +33,15 @@ class PathagarBook(StaticLiveServerTestCase):
         self.adminuser.is_staff = True
         self.adminuser.save()
 
+        # create anonymous author
         anonymous = Author(a_author=self.AUTHOR)
         anonymous.save()
+
+        # create tag group
+        group = TagGroup(name="myth", slug="myth")
+        group.save()
+        self.taggroups = ['lovecraft', 'cthulhu']
+        group.tags.add(*self.taggroups)
 
     def tearDown(self):
         self.driver.close()
@@ -151,6 +160,7 @@ class PathagarBook(StaticLiveServerTestCase):
         elem.send_keys(Keys.RETURN)
 
         fullpath = os.path.abspath("./examples/The Dunwich Horror.epub")
+        md5file = md5(open(fullpath, 'rb').read()).hexdigest()
         self.assertTrue(os.path.isfile(fullpath))
 
         elem = drv.find_element_by_id("id_book_file")
@@ -163,7 +173,10 @@ class PathagarBook(StaticLiveServerTestCase):
         elem.send_keys(self.AUTHOR)
 
         elem = drv.find_element_by_id("id_tags")
-        elem.send_keys("selenium")
+        tags = ["lovecraft", "horror", "Cthulhu"]
+        elem.send_keys(" ".join(tags))
+        # force tags to lowercase due to settings.TAGGIT_CASE_INSENSITIVE
+        tags = [x.lower() for x in tags]
 
         elem = drv.find_element_by_id("id_a_summary")
         elem.send_keys("A little summary")
@@ -172,6 +185,22 @@ class PathagarBook(StaticLiveServerTestCase):
         elem.send_keys(Keys.RETURN)
 
         self.wait_url(r'^http://[a-zA-Z0-9:]+/book/\d+/view$', regex=True)
+
+        # simulate a download
+        elem = drv.find_elements_by_css_selector("a.download")
+        link = elem[0].get_attribute('href')
+        data = urlopen(link).read()
+        md5download = md5(data).hexdigest()
+        
+        self.assertEqual(md5download, md5file)
+
+        # check MD5
+
+        # tags on detail book
+        elem = drv.find_element_by_id("tags")
+        elems = elem.find_elements_by_css_selector("a.button")
+        items = [ x.text for x in elems ]
+        self.assertEqual(sorted(items), sorted(tags))
 
         latest_url = str(self.live_server_url) + str(reverse_lazy("latest"))
         drv.get(latest_url)
@@ -202,6 +231,7 @@ class PathagarBook(StaticLiveServerTestCase):
         self.book_search([(self.AUTHOR, ["The Dunwich Horror"]),
                           ("Arthur", [])],
                          option='search-author')
+
         # Search authors
         author_url = str(self.live_server_url) + str(reverse_lazy("by_author"))
         drv.get(author_url)
@@ -229,3 +259,44 @@ class PathagarBook(StaticLiveServerTestCase):
         self.author_search([(self.AUTHOR[0:5], [self.AUTHOR]),
                             ("Arthur", [])],
                            option='search-author')
+
+        # Tags
+        tags_url = str(self.live_server_url) + str(reverse_lazy("tags"))
+        drv.get(tags_url)
+        self.wait_url(tags_url)
+        
+        elem = drv.find_element_by_id("tags")
+        elems = elem.find_elements_by_css_selector("a.button")
+        items = [ x.text for x in elems ]
+        links = [ x.get_attribute('href') for x in elems ]
+        self.assertEqual(sorted(items), sorted(tags))
+
+        # check now that book is available from each tags
+        for link in links:
+            drv.get(link)
+            self.wait_url(link)
+
+            elem = drv.find_elements_by_css_selector("h1.bookname > a")
+            self.assertEqual(elem[0].text, "The Dunwich Horror")
+
+        # Tags Groups
+        tags_url = str(self.live_server_url) + str(reverse_lazy("tags"))
+        drv.get(tags_url)
+        self.wait_url(tags_url)
+
+        elem = drv.find_element_by_id("taggroups")
+        elems = elem.find_elements_by_css_selector("a.button")
+        items = [ x.text for x in elems ]
+        links = [ x.get_attribute('href') for x in elems ]
+        self.assertEqual(sorted(items), ["myth"])
+
+        # check now that tag is available from taggroup
+        for link in links:
+            drv.get(link)
+            self.wait_url(link)
+
+            elem = drv.find_element_by_id("tags")
+            elems = elem.find_elements_by_css_selector("a.button")
+            items = [ x.text for x in elems ]
+            links = [ x.get_attribute('href') for x in elems ]
+            self.assertEqual(sorted(items), sorted(self.taggroups))

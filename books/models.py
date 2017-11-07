@@ -66,7 +66,7 @@ class Language(models.Model):
 class TagGroup(models.Model):
     name = models.CharField(max_length=200, blank=False)
     slug = models.SlugField(max_length=200, blank=False)
-    #tags = TagableManager()
+    tags = TaggableManager()
 
     class Meta:
         verbose_name = "Tag group"

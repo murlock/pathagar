@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{% load tagging_tags %}
 {# {% load comments %} #}
 
 {% block title %}{{ book.a_title }} :: Pathagar Book Server{% endblock %}
@@ -36,7 +35,7 @@
 
 {% if book.tags.count != 0 %}
   <div class="span-2"><label>Tags:</label></div>
-  <div class="span-10">
+  <div id="tags" class="span-10">
   {% for tag in book.tags.all %}
     <a class="button" href="{% url 'by_tag' tag.name %}">{{ tag.name }}</a>
   {% endfor %}

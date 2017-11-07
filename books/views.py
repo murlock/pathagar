@@ -36,10 +36,8 @@ from django.views.generic.edit import DeleteView
 from pathagar.settings import BOOKS_PER_PAGE, AUTHORS_PER_PAGE
 from django.conf import settings
 
-# OLD ---------------
-from tagging.models import Tag
-# --------------- OLD
-from taggit.models import Tag as tTag
+from taggit.models import Tag
+from django.core.exceptions import ObjectDoesNotExist
 
 from sendfile import sendfile
 
@@ -105,13 +103,12 @@ def tags(request, qtype=None, group_slug=None):
     if group_slug is not None:
         tag_group = get_object_or_404(TagGroup, slug=group_slug)
         context.update({'tag_group': tag_group})
-        context.update({'tag_list': Tag.objects.get_for_object(tag_group)})
+        context.update({'tag_list': tag_group.tags.all()})
     else:
-        context.update({'tag_list': tTag.objects.all()})
+        context.update({'tag_list': Tag.objects.all()})
 
     tag_groups = TagGroup.objects.all()
     context.update({'tag_group_list': tag_groups})
-
 
     # Return OPDS Atom Feed:
     if qtype == 'feed':
@@ -286,10 +283,9 @@ def by_author(request, qtype=None):
 def by_tag(request, tag, qtype=None):
     """ displays a book list by the tag argument """
     # get the Tag object
-    tag_instance = tTag.objects.get(name=tag) # TODO replace as Tag when django-tagging is removed
-
-    # if the tag does not exist, return 404
-    if tag_instance is None:
+    try:
+        tag_instance = Tag.objects.get(name=tag)
+    except ObjectDoesNotExist:
         raise Http404()
 
     # Get a list of books that have the requested tag
@@ -300,4 +296,3 @@ def by_tag(request, tag, qtype=None):
 def most_downloaded(request, qtype=None):
     queryset = Book.objects.all().order_by('-downloads')
     return _book_list(request, queryset, qtype, list_by='most-downloaded')
-

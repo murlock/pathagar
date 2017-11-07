@@ -31,6 +31,11 @@ class Command(BaseCommand):
                             dest='ignore_error',
                             default=False,
                             help='Continue after error')
+        parser.add_argument('--ignore-tags',
+                            action='store_true',
+                            dest='ignore_tags',
+                            default=False,
+                            help='Ignore tags from EPUB file')
         parser.add_argument('path', help='PATH')
 
     def handle(self, *args, **options):
@@ -94,6 +99,8 @@ class Command(BaseCommand):
                 book.book_file.save(os.path.basename(name), File(f))
                 book.validate_unique()
                 book.save()
+                if not options['ignore_tags']:
+                    book.tags.add(*info.subject)
             except IntegrityError as e:
                 self.stdout.write(self.style.WARNING("The book {0} was not saved: {1}".format(book.book_file, str(e))))
                 if not options['ignore_error']:

@@ -18,6 +18,7 @@
 from django.forms import ModelForm
 from books.models import Book, Language, Author
 
+
 class BookForm(ModelForm):
     # dc_language = ModelChoiceField(Language.objects, widget=SelectWithPop)
 
@@ -38,6 +39,7 @@ class BookForm(ModelForm):
             instance.mimetype = book_file.content_type
         if commit:
             instance.save()
+            self.save_m2m()
         return instance
 
 
