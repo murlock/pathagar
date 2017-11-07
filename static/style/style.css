@@ -141,7 +141,7 @@ a[href$=".epub"]   {
     color: gray;
 }
 
-.searchbox #submit {
+.searchbox #search_submit {
     display: none;
 }
 
