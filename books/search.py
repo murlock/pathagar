@@ -51,7 +51,7 @@ def advanced_search(queryset, searchterms):
             if key == 'title':
                 q_objects.append(Q(a_title__icontains = word))
             if key == 'author':
-                q_objects.append(Q(a_author__icontains = word))
+                q_objects.append(Q(a_author__a_author__icontains = word))
             if key == 'publisher':
                 q_objects.append(Q(dc_publisher__icontains = word))
             if key == 'identifier':

@@ -1,21 +1,18 @@
 import os
 from time import sleep
-import unittest
+from urllib.parse import quote_plus
 import re
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 
-from django.test import TestCase
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from django.core.management import call_command, CommandError
 from django.urls import reverse_lazy
-
-
 from django.contrib.auth.models import User
 
 from books.models import Author
+
 
 class PathagarBook(StaticLiveServerTestCase):
     ADMIN_USER = 'admin'
@@ -27,7 +24,9 @@ class PathagarBook(StaticLiveServerTestCase):
         self.driver = webdriver.Firefox()
         self.driver.implicitly_wait(2)
 
-        self.adminuser = User.objects.create_user(self.ADMIN_USER, 'admin@test.com', self.ADMIN_PASS)
+        self.adminuser = User.objects.create_user(self.ADMIN_USER,
+                                                  'admin@test.com',
+                                                  self.ADMIN_PASS)
         self.adminuser.save()
         self.adminuser.is_staff = True
         self.adminuser.save()
@@ -36,7 +35,6 @@ class PathagarBook(StaticLiveServerTestCase):
         anonymous.save()
 
     def tearDown(self):
-        sleep(5)
         self.driver.close()
 
     def wait_url(self, url, timeout=5, regex=False):
@@ -47,9 +45,48 @@ class PathagarBook(StaticLiveServerTestCase):
             elif url == self.driver.current_url:
                 return
             sleep(0.1)
-        raise TimeoutException("URL %s not reached (current URL: %s)" % (url, self.driver.current_url))
+        raise TimeoutException("URL %s not reached (current URL: %s)" %
+                               (url, self.driver.current_url))
 
-    def test_03_login(self):
+    def book_search(self, args, option=None):
+        drv = self.driver
+        # remove search options
+        action = webdriver.ActionChains(drv)
+        elem = drv.find_element_by_id("search")
+        action.move_to_element(elem).perform()
+        for key in ("search-author", "search-title"):
+            chk = drv.find_element_by_id(key)
+            if chk.get_attribute("checked"):
+                chk.click()
+
+        for term, results in args:
+            elem = drv.find_element_by_id("search")
+
+            if option:
+                # simulate a mouse hover
+                action = webdriver.ActionChains(drv)
+                action.move_to_element(elem).perform()
+
+                chk = drv.find_element_by_id(option)
+                if not chk.get_attribute('checked'):
+                    chk.click()
+
+            elem.clear()
+            elem.send_keys(term)
+            elem.submit()
+
+            suffix = ''
+            if option:
+                suffix = '&%s=on' % option
+            self.wait_url(r'.*?q=' + quote_plus(term) + suffix, regex=True)
+
+            founds = drv.find_elements_by_css_selector("h1.bookname > a")
+            self.assertEqual(len(founds), len(results))
+            if results:
+                names = [x.text for x in founds]
+                self.assertEqual(names, results)
+
+    def test_scenario_with_login(self):
         drv = self.driver
         drv.get(self.live_server_url)
 
@@ -65,14 +102,12 @@ class PathagarBook(StaticLiveServerTestCase):
         elem.send_keys(self.ADMIN_PASS)
         elem.send_keys(Keys.RETURN)
 
-        # sleep(1)
         self.wait_url(url)
 
         self.assertEqual(url, drv.current_url)
 
-        # sleep(1)
-
-        elem = drv.find_elements_by_xpath("//*[contains(text(), 'Add Book')]")[0]
+        elem = drv.find_elements_by_xpath(
+            "//*[contains(text(), 'Add Book')]")[0]
         elem.send_keys(Keys.RETURN)
 
         fullpath = os.path.abspath("./examples/The Dunwich Horror.epub")
@@ -98,7 +133,6 @@ class PathagarBook(StaticLiveServerTestCase):
 
         self.wait_url(r'^http://[a-zA-Z0-9:]+/book/\d+/view$', regex=True)
 
-
         latest_url = str(self.live_server_url) + str(reverse_lazy("latest"))
         drv.get(latest_url)
         self.wait_url(latest_url)
@@ -106,18 +140,25 @@ class PathagarBook(StaticLiveServerTestCase):
         elem = drv.find_elements_by_css_selector("h1.bookname > a")
         self.assertEqual(elem[0].text, "The Dunwich Horror")
 
-        # Launch a simple search (from books)
-        for term, results in [("xxxxxxx", []), ("Dunwich", ["The Dunwich Horror"])]:
-            print(term)
-            elem = drv.find_element_by_id("search")
-            elem.clear()
-            elem.send_keys(term)
-            elem.submit()
+        # Search books
+        self.book_search(
+            [("xxxxxxx", []), ("Dunwich", ["The Dunwich Horror"]), ])
 
-            self.wait_url(r'.*?q=' + term, regex=True)
+        self.book_search(
+            [("title:Dunwich", ["The Dunwich Horror"]),
+             ("author:" + self.AUTHOR, ["The Dunwich Horror"]),
+             ("summary:little", ["The Dunwich Horror"]), ])
 
-            founds = drv.find_elements_by_css_selector("h1.bookname > a")
-            self.assertEqual(len(founds), len(results))
-            if results:
-                names = [x.text for x in founds]
-                self.assertEqual(names, results)
+        self.book_search([("author:" + self.AUTHOR, ["The Dunwich Horror"]),
+                          ("title:dunwich", ["The Dunwich Horror"]),
+                          ("title:necronomicon", []),
+                          ("summary:little", ["The Dunwich Horror"]), ],
+                         option='search-all')
+
+        self.book_search([("horror", ["The Dunwich Horror"]),
+                          ("necronomicon1", [])],
+                         option='search-title')
+
+        self.book_search([(self.AUTHOR, ["The Dunwich Horror"]),
+                          ("Arthur", [])],
+                         option='search-author')
