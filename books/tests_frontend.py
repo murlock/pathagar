@@ -48,7 +48,7 @@ class PathagarBook(StaticLiveServerTestCase):
         raise TimeoutException("URL %s not reached (current URL: %s)" %
                                (url, self.driver.current_url))
 
-    def book_search(self, args, option=None):
+    def remove_search_options(self):
         drv = self.driver
         # remove search options
         action = webdriver.ActionChains(drv)
@@ -58,6 +58,11 @@ class PathagarBook(StaticLiveServerTestCase):
             chk = drv.find_element_by_id(key)
             if chk.get_attribute("checked"):
                 chk.click()
+
+    def book_search(self, args, option=None):
+        drv = self.driver
+
+        self.remove_search_options()
 
         for term, results in args:
             elem = drv.find_element_by_id("search")
@@ -84,7 +89,42 @@ class PathagarBook(StaticLiveServerTestCase):
             self.assertEqual(len(founds), len(results))
             if results:
                 names = [x.text for x in founds]
-                self.assertEqual(names, results)
+                self.assertEqual(names, results,
+                    msg="Expected %s, found %s" % (str(results), str(names)))
+
+    def author_search(self, args, option=None):
+        drv = self.driver
+
+        self.remove_search_options()
+
+        for term, results in args:
+            elem = drv.find_element_by_id("search")
+
+            if option:
+                # simulate a mouse hover
+                action = webdriver.ActionChains(drv)
+                action.move_to_element(elem).perform()
+
+                chk = drv.find_element_by_id(option)
+                if not chk.get_attribute('checked'):
+                    chk.click()
+
+            elem.clear()
+            elem.send_keys(term)
+            elem.submit()
+
+            suffix = ''
+            if option:
+                suffix = '&%s=on' % option
+            self.wait_url(r'.*?q=' + quote_plus(term) + suffix, regex=True)
+
+            founds = drv.find_elements_by_css_selector(
+                "h2.authorname > a > span")
+            self.assertEqual(len(founds), len(results), msg="Failed to found %s" % term)
+            if results:
+                names = [x.text for x in founds]
+                self.assertEqual(names, results,
+                    msg="Expected %s, found %s" % (str(results), str(names)))
 
     def test_scenario_with_login(self):
         drv = self.driver
@@ -162,3 +202,30 @@ class PathagarBook(StaticLiveServerTestCase):
         self.book_search([(self.AUTHOR, ["The Dunwich Horror"]),
                           ("Arthur", [])],
                          option='search-author')
+        # Search authors
+        author_url = str(self.live_server_url) + str(reverse_lazy("by_author"))
+        drv.get(author_url)
+        self.wait_url(author_url)
+
+        self.author_search([(self.AUTHOR[0:4], [self.AUTHOR]),
+                            ("Dunwich", [self.AUTHOR]),
+                            ('xxx', []), ])
+
+        self.author_search(
+            [("title:Dunwich", [self.AUTHOR]),
+             ("author:" + self.AUTHOR[0:5], [self.AUTHOR]),
+             ("summary:little", [self.AUTHOR]), ])
+
+        self.author_search([("author:" + self.AUTHOR, [self.AUTHOR]),
+                            ("title:dunwich", [self.AUTHOR]),
+                            ("title:necronomicon", []),
+                            ("summary:little", [self.AUTHOR])],
+                           option='search-all')
+
+        self.author_search([("horror", [self.AUTHOR]),
+                            ("necronomicon1", [])],
+                           option='search-title')
+
+        self.author_search([(self.AUTHOR[0:5], [self.AUTHOR]),
+                            ("Arthur", [])],
+                           option='search-author')
