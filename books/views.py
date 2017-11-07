@@ -103,7 +103,7 @@ def tags(request, qtype=None, group_slug=None):
     if group_slug is not None:
         tag_group = get_object_or_404(TagGroup, slug=group_slug)
         context.update({'tag_group': tag_group})
-        context.update({'tag_list': Tag.objects.get_for_object(tag_group)})
+        context.update({'tag_list': tag_group.tags.all()})
     else:
         context.update({'tag_list': Tag.objects.all()})
 
