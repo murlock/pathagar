@@ -75,9 +75,9 @@ class Command(BaseCommand):
                 lang = lang[0]
 
             #XXX: Hacks below
-            info.title = info.title or ''
+            info.title = info.title or os.path.splitext(os.path.basename(name))[0]
             info.summary = info.summary or ''
-            info.creator = info.creator or ''
+            info.creator = info.creator or 'Anonymous'
             info.rights = info.rights or ''
             info.date = info.date or ''
             if not info.identifier:
