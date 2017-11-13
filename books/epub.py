@@ -59,7 +59,7 @@ class Epub(object):
             # and we don't want to write to the root directory
             name = name.lstrip(os.path.sep)
             if name.endswith(os.path.sep) or name.endswith('\\'):
-                os.makedirs(os.path.join(self._tempdir, name))
+                os.makedirs(os.path.join(self._tempdir, name), exist_ok=True)
             else:
                 self._zobject.extract(name, self._tempdir)
 
