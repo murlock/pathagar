@@ -63,16 +63,23 @@ class Command(BaseCommand):
                 if not options['ignore_error']:
                     raise CommandError(e)
                 continue
-            lang = Language.objects.filter(code=info.language)
-            if not lang:
-                for data in langs:
-                    if data[0] == info.language:
-                        lang = Language()
-                        lang.label = data[1]
-                        lang.save()
-                        break
-            else:
-                lang = lang[0]
+
+            lang = None
+            if info.language:
+                # some epub has en-US as language
+                lang = Language.objects.filter(code=info.language.split("-")[0])
+                if lang:
+                    lang = lang[0]
+                else:
+                    for data in langs:
+                        if data[0] == info.language:
+                            lang = Language()
+                            lang.label = data[1]
+                            lang.save()
+                            break
+                    else:
+                        print("No language available for", info.language, os.path.basename(name))
+                        lang = None
 
             #XXX: Hacks below
             info.title = info.title \
@@ -94,7 +101,7 @@ class Command(BaseCommand):
                         a_author=author, a_summary=info.summary,
                         file_sha256sum=sha, a_rights=info.rights,
                         dc_identifier=info.identifier['value'].strip('urn:uuid:'),
-                        dc_issued=info.date,
+                        dc_issued=info.date, dc_language=lang,
                         a_status=pub_status, mimetype="application/epub+zip")
             try:
                 book.book_file.save(os.path.basename(name), File(f))
