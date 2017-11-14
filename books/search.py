@@ -58,6 +58,8 @@ def advanced_search(queryset, searchterms):
                 q_objects.append(Q(dc_identifier__icontains = word))
             if key == 'summary':
                 q_objects.append(Q(a_summary__icontains = word))
+            if key == 'lang':
+                q_objects.append(Q(dc_language__code = word))
         else:
             word = subterm
             try:

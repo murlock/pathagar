@@ -22,8 +22,8 @@ def get_epubs(path):
 
 
 class Command(BaseCommand):
-    help = "Adds a book or a collection (via a directory containing EPUB files)"
-    args = 'Absolute path to directory of EPUB files or EPUB file'
+    help = "Adds a EPUB or a a directory containing EPUB files"
+    args = 'Path to directory of EPUB files or EPUB file'
 
     def add_arguments(self, parser):
         parser.add_argument('--ignore-error',
@@ -58,26 +58,39 @@ class Command(BaseCommand):
                 info = e.get_info()
                 e.close()
             except Exception as e:
-                self.stdout.write(self.style.WARNING("The book {0} is not a valid epub filewas not saved: {1}".format(
-                    os.path.basename(name), str(e))))
+                self.stdout.write(
+                    self.style.WARNING(
+                        "The book {0} is not valid epub file: {1}".format(
+                            os.path.basename(name), str(e))))
                 if not options['ignore_error']:
                     raise CommandError(e)
                 continue
-            lang = Language.objects.filter(code=info.language)
-            if not lang:
-                for data in langs:
-                    if data[0] == info.language:
-                        lang = Language()
-                        lang.label = data[1]
-                        lang.save()
-                        break
-            else:
-                lang = lang[0]
 
-            #XXX: Hacks below
-            info.title = info.title or ''
+            lang = None
+            if info.language:
+                # some epub has en-US as language
+                lang = Language.objects.filter(
+                    code=info.language.split("-")[0])
+                if lang:
+                    lang = lang[0]
+                else:
+                    for data in langs:
+                        if data[0] == info.language:
+                            lang = Language()
+                            lang.label = data[1]
+                            lang.save()
+                            break
+                    else:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                "No lang found for {1}".format(
+                                    info.language)))
+
+            # XXX: Hacks below
+            info.title = info.title \
+                or os.path.splitext(os.path.basename(name))[0]
             info.summary = info.summary or ''
-            info.creator = info.creator or ''
+            info.creator = info.creator or 'Anonymous'
             info.rights = info.rights or ''
             info.date = info.date or ''
             if not info.identifier:
@@ -93,7 +106,7 @@ class Command(BaseCommand):
                         a_author=author, a_summary=info.summary,
                         file_sha256sum=sha, a_rights=info.rights,
                         dc_identifier=info.identifier['value'].strip('urn:uuid:'),
-                        dc_issued=info.date,
+                        dc_issued=info.date, dc_language=lang,
                         a_status=pub_status, mimetype="application/epub+zip")
             try:
                 book.book_file.save(os.path.basename(name), File(f))
@@ -102,6 +115,8 @@ class Command(BaseCommand):
                 if not options['ignore_tags']:
                     book.tags.add(*info.subject)
             except IntegrityError as e:
-                self.stdout.write(self.style.WARNING("The book {0} was not saved: {1}".format(book.book_file, str(e))))
+                self.stdout.write(
+                    self.style.WARNING(
+                        "The book {0} was not saved: {1}".format(book.book_file, str(e))))
                 if not options['ignore_error']:
                     raise CommandError(e)
