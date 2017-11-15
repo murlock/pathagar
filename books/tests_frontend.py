@@ -229,13 +229,17 @@ class PathagarBook(StaticLiveServerTestCase):
         self.assertEqual(elem[0].text, "The Dunwich Horror")
 
         # check books list with invalid page number
-        latest_url = str(self.live_server_url) + str(reverse_lazy("latest"))
-        drv.get(latest_url + "?page=9999")
+        latest_url = str(self.live_server_url) + str(reverse_lazy("latest")) + "?page=9999"
+        drv.get(latest_url)
         self.wait_url(latest_url)
 
         # check author list with invalid page number
-        latest_url = str(self.live_server_url) + str(reverse_lazy("by-author"))
-        drv.get(latest_url + "?page=9999")
+        latest_url = str(self.live_server_url) + str(reverse_lazy("by_author")) + "?page=9999"
+        drv.get(latest_url)
+        self.wait_url(latest_url)
+
+        latest_url = str(self.live_server_url) + str(reverse_lazy("latest"))
+        drv.get(latest_url)
         self.wait_url(latest_url)
 
         # Search books
@@ -253,7 +257,7 @@ class PathagarBook(StaticLiveServerTestCase):
                           ("summary:little", ["The Dunwich Horror"]),
                           ("lang:en", []),
                           ("publisher:xxxxxx", []),
-                          ("identifier:50133", ["The Dunwich Horror"]), ],
+                          ("identifier:50133", []), ],
                          option='search-all')
 
         self.book_search([("horror", ["The Dunwich Horror"]),
