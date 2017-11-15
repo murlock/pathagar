@@ -7,6 +7,7 @@ import re
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.select import Select
 from selenium.common.exceptions import TimeoutException
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -159,7 +160,7 @@ class PathagarBook(StaticLiveServerTestCase):
             "//*[contains(text(), 'Add Book')]")[0]
         elem.send_keys(Keys.RETURN)
 
-        fullpath = os.path.abspath("./examples/The Dunwich Horror.epub")
+        fullpath = os.path.abspath("./examples/valid/The Dunwich Horror.epub")
         md5file = md5(open(fullpath, 'rb').read()).hexdigest()
         self.assertTrue(os.path.isfile(fullpath))
 
@@ -191,10 +192,9 @@ class PathagarBook(StaticLiveServerTestCase):
         link = elem[0].get_attribute('href')
         data = urlopen(link).read()
         md5download = md5(data).hexdigest()
-        
-        self.assertEqual(md5download, md5file)
 
         # check MD5
+        self.assertEqual(md5download, md5file)
 
         # tags on detail book
         elem = drv.find_element_by_id("tags")
@@ -202,12 +202,41 @@ class PathagarBook(StaticLiveServerTestCase):
         items = [ x.text for x in elems ]
         self.assertEqual(sorted(items), sorted(tags))
 
+        # book edit
+        book_edit = str(self.live_server_url) + str(reverse_lazy("book_edit", kwargs={'pk': 1}))
+        drv.get(book_edit)
+        self.wait_url(book_edit)
+
+        elem = drv.find_element_by_id("id_a_title")
+        self.assertEqual(elem.get_attribute('value'), "The Dunwich Horror")
+
+        elem = Select(drv.find_element_by_id("id_a_author"))
+        self.assertEqual(elem.first_selected_option.text, self.AUTHOR)
+
+        elem = drv.find_element_by_id("id_tags")
+        items = [x.strip() for x in elem.get_attribute('value').split(',')]
+        self.assertEqual(sorted(items), sorted(tags))
+
+        elem = drv.find_element_by_id("id_a_summary")
+        self.assertEqual(elem.get_attribute('value'), "A little summary")
+
+        # check book is available in latest url
         latest_url = str(self.live_server_url) + str(reverse_lazy("latest"))
         drv.get(latest_url)
         self.wait_url(latest_url)
 
         elem = drv.find_elements_by_css_selector("h1.bookname > a")
         self.assertEqual(elem[0].text, "The Dunwich Horror")
+
+        # check books list with invalid page number
+        latest_url = str(self.live_server_url) + str(reverse_lazy("latest"))
+        drv.get(latest_url + "?page=9999")
+        self.wait_url(latest_url)
+
+        # check author list with invalid page number
+        latest_url = str(self.live_server_url) + str(reverse_lazy("by-author"))
+        drv.get(latest_url + "?page=9999")
+        self.wait_url(latest_url)
 
         # Search books
         self.book_search(
@@ -221,7 +250,10 @@ class PathagarBook(StaticLiveServerTestCase):
         self.book_search([("author:" + self.AUTHOR, ["The Dunwich Horror"]),
                           ("title:dunwich", ["The Dunwich Horror"]),
                           ("title:necronomicon", []),
-                          ("summary:little", ["The Dunwich Horror"]), ],
+                          ("summary:little", ["The Dunwich Horror"]),
+                          ("lang:en", []),
+                          ("publisher:xxxxxx", []),
+                          ("identifier:50133", ["The Dunwich Horror"]), ],
                          option='search-all')
 
         self.book_search([("horror", ["The Dunwich Horror"]),
@@ -244,7 +276,8 @@ class PathagarBook(StaticLiveServerTestCase):
         self.author_search(
             [("title:Dunwich", [self.AUTHOR]),
              ("author:" + self.AUTHOR[0:5], [self.AUTHOR]),
-             ("summary:little", [self.AUTHOR]), ])
+             ("summary:little", [self.AUTHOR]),
+             ("lang:fr", []), ])
 
         self.author_search([("author:" + self.AUTHOR, [self.AUTHOR]),
                             ("title:dunwich", [self.AUTHOR]),
@@ -264,7 +297,7 @@ class PathagarBook(StaticLiveServerTestCase):
         tags_url = str(self.live_server_url) + str(reverse_lazy("tags"))
         drv.get(tags_url)
         self.wait_url(tags_url)
-        
+
         elem = drv.find_element_by_id("tags")
         elems = elem.find_elements_by_css_selector("a.button")
         items = [ x.text for x in elems ]

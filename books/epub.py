@@ -35,8 +35,7 @@ class Epub(object):
         self._ncxpath = None
         self._basepath = None
 
-        if not self._verify():
-            print('Warning: This does not seem to be a valid epub file')
+        self._verify()
 
         self._get_opf()
         self._get_ncx()
@@ -87,7 +86,7 @@ class Epub(object):
         if isinstance(self._file, str):
             self._file = os.path.abspath(self._file)
             if not os.path.exists(self._file):
-                return False
+                raise FileNotFoundError("No such file: %s" % self._file)
 
         self._zobject = zipfile.ZipFile(self._file)
         # force a testzip to ensure that Zip is valid
@@ -95,16 +94,14 @@ class Epub(object):
         self._zobject.testzip()
 
         if not 'mimetype' in self._zobject.namelist():
-            return False
+            raise ValueError("Invalid EPUB file, mimetype is not available")
 
         mtypefile = self._zobject.open('mimetype')
         mimetype = mtypefile.readline().decode('utf-8')
 
         # Some files seem to have trailing characters
         if not mimetype.startswith('application/epub+zip'):
-            return False
-
-        return True
+            raise ValueError("EPUB file has invalid mimetype: %s" % mimetype)
 
     def get_info(self):
         '''
