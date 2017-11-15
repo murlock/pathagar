@@ -15,14 +15,6 @@ class EpubTest(TestCase):
         self.assertEqual(info.creator, "H. P. Lovecraft")
         epub.close()
 
-    def test_remove_temporary_dir(self):
-        basedir = ''
-        if True:
-            epub = Epub("examples/The Dunwich Horror.epub")
-            basedir = epub.get_basedir()
-            del epub
-        self.assertFalse(os.path.exists(basedir))
-
     def test_tags(self):
         epub = Epub("examples/Five Plays.epub")
         info = epub.get_info()
