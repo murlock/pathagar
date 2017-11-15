@@ -55,9 +55,6 @@ from books.opds import generate_taggroups_catalog
 
 from books.app_settings import BOOK_PUBLISHED
 
-@login_required
-def add_language(request):
-    return handlePopAdd(request, AddLanguageForm, 'language')
 
 class BookDetailView(DetailView):
     model = Book

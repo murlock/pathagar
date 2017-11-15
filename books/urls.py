@@ -64,9 +64,6 @@ urlpatterns = [
 
     # Comments
     # FIXME (r'^comments/', include('django.contrib.comments.urls')),
-
-    # Add language:
-    url(r'^add/dc_language|language/$', views.add_language),
 ]
 
 
