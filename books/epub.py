@@ -114,7 +114,7 @@ class Epub(object):
         Returns a tuple file like object, name extension
         '''
         if self._info.cover_image is None:
-            return None
+            return None, None
         names = self._zobject.namelist()
         img = self._info.cover_image
         ext = os.path.splitext(img)[1]
