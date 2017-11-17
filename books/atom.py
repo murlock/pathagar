@@ -42,12 +42,11 @@ GENERATOR_ATTR = {
 }
 
 
-
-## based on django.utils.xmlutils.SimplerXMLGenerator
+# based on django.utils.xmlutils.SimplerXMLGenerator
 class SimplerXMLGenerator(XMLGenerator):
     def addQuickElement(self, name, contents=None, attrs=None, tabs=1):
         "Convenience method for adding an element with no children"
-        if attrs is None: attrs = {}
+        attrs = attrs or {}
         self.characters("\t" * tabs)
         self.startElement(name, attrs)
         if contents is not None:
@@ -56,15 +55,12 @@ class SimplerXMLGenerator(XMLGenerator):
         self.characters("\n")
 
 
-
-
-## based on django.utils.feedgenerator.rfc3339_date
+# based on django.utils.feedgenerator.rfc3339_date
 def rfc3339_date(date):
     return date.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-
-## based on django.utils.feedgenerator.get_tag_uri
+# based on django.utils.feedgenerator.get_tag_uri
 def get_tag_uri(url, date):
     "Creates a TagURI. See http://diveintomark.org/archives/2004/05/28/howto-atom-id"
     tag = re.sub('^http://', '', url)
@@ -74,108 +70,17 @@ def get_tag_uri(url, date):
     return 'tag:' + tag
 
 
-
-## based on django.contrib.syndication.feeds.Feed
-class Feed(object):
-
-
-    VALIDATE = True
-
-
-    def __init__(self, slug, feed_url):
-        # @@@ slug and feed_url are not used yet
-        pass
-
-
-    def __get_dynamic_attr(self, attname, obj, default=None):
-        try:
-            attr = getattr(self, attname)
-        except AttributeError:
-            return default
-        if callable(attr):
-            # Check func_code.co_argcount rather than try/excepting the
-            # function and catching the TypeError, because something inside
-            # the function may raise the TypeError. This technique is more
-            # accurate.
-            if hasattr(attr, 'func_code'):
-                argcount = attr.func_code.co_argcount
-            else:
-                argcount = attr.__call__.func_code.co_argcount
-            if argcount == 2: # one argument is 'self'
-                return attr(obj)
-            else:
-                return attr()
-        return attr
-
-
-    def get_feed(self, extra_params=None):
-
-        if extra_params:
-            try:
-                obj = self.get_object(extra_params.split('/'))
-            except (AttributeError, LookupError):
-                raise LookupError('Feed does not exist')
-        else:
-            obj = None
-
-        feed = AtomFeed(
-            atom_id = self.__get_dynamic_attr('feed_id', obj),
-            title = self.__get_dynamic_attr('feed_title', obj),
-            updated = self.__get_dynamic_attr('feed_updated', obj),
-            icon = self.__get_dynamic_attr('feed_icon', obj),
-            logo = self.__get_dynamic_attr('feed_logo', obj),
-            rights = self.__get_dynamic_attr('feed_rights', obj),
-            subtitle = self.__get_dynamic_attr('feed_subtitle', obj),
-            authors = self.__get_dynamic_attr('feed_authors', obj, default=[]),
-            categories = self.__get_dynamic_attr('feed_categories', obj, default=[]),
-            contributors = self.__get_dynamic_attr('feed_contributors', obj, default=[]),
-            links = self.__get_dynamic_attr('feed_links', obj, default=[]),
-            extra_attrs = self.__get_dynamic_attr('feed_extra_attrs', obj),
-            hide_generator = self.__get_dynamic_attr('hide_generator', obj, default=False)
-        )
-
-        items = self.__get_dynamic_attr('items', obj)
-        if items is None:
-            raise LookupError('Feed has no items field')
-
-        for item in items:
-            feed.add_item(
-                atom_id = self.__get_dynamic_attr('item_id', item),
-                title = self.__get_dynamic_attr('item_title', item),
-                updated = self.__get_dynamic_attr('item_updated', item),
-                content = self.__get_dynamic_attr('item_content', item),
-                published = self.__get_dynamic_attr('item_published', item),
-                rights = self.__get_dynamic_attr('item_rights', item),
-                source = self.__get_dynamic_attr('item_source', item),
-                summary = self.__get_dynamic_attr('item_summary', item),
-                authors = self.__get_dynamic_attr('item_authors', item, default=[]),
-                categories = self.__get_dynamic_attr('item_categories', item, default=[]),
-                contributors = self.__get_dynamic_attr('item_contributors', item, default=[]),
-                links = self.__get_dynamic_attr('item_links', item, default=[]),
-                extra_attrs = self.__get_dynamic_attr('item_extra_attrs', None, default={}),
-            )
-
-        if self.VALIDATE:
-            feed.validate()
-        return feed
-
-
-
 class ValidationError(Exception):
     pass
 
 
-
-## based on django.utils.feedgenerator.SyndicationFeed and django.utils.feedgenerator.Atom1Feed
+# based on django.utils.feedgenerator.SyndicationFeed and django.utils.feedgenerator.Atom1Feed
 class AtomFeed(object):
-
-
     mime_type = 'application/atom+xml'
     ns = u'http://www.w3.org/2005/Atom'
 
-
     def __init__(self, atom_id, title, updated=None, icon=None, logo=None, rights=None, subtitle=None,
-        authors=None, categories=None, contributors=None, links=None, extra_attrs=None, hide_generator=False):
+                 authors=None, categories=None, contributors=None, links=None, extra_attrs=None, hide_generator=False):
         if atom_id is None:
             raise LookupError('Feed has no feed_id field')
         if title is None:
@@ -203,10 +108,9 @@ class AtomFeed(object):
         }
         self.items = []
 
-
     def add_item(self, atom_id, title, updated, content=None, published=None, rights=None, source=None, summary=None,
-        authors=None, categories=None, contributors=None, links=None, extra_attrs=None, dc_language=None, dc_publisher=None,
-        dc_issued=None, dc_identifier=None):
+                 authors=None, categories=None, contributors=None, links=None, extra_attrs=None, dc_language=None,
+                 dc_publisher=None, dc_issued=None, dc_identifier=None):
         if atom_id is None:
             raise LookupError('Feed has no item_id method')
         if title is None:
@@ -238,7 +142,6 @@ class AtomFeed(object):
             'dc_identifier': dc_identifier,
         })
 
-
     def latest_updated(self):
         """
         Returns the latest item's updated or the current time if there are no items.
@@ -248,21 +151,19 @@ class AtomFeed(object):
             updates.sort()
             return updates[-1]
         else:
-            return datetime.now() # @@@ really we should allow a feed to define its "start" for this case
-
+            return datetime.now()  # @@@ really we should allow a feed to define its "start" for this case
 
     def write_text_construct(self, handler, element_name, data, tabs=1):
         if isinstance(data, tuple):
             text_type, text = data
             if text_type == 'xhtml':
                 handler.startElement(element_name, {'type': text_type})
-                handler._write(text) # write unescaped -- it had better be well-formed XML
+                handler._write(text)  # write unescaped -- it had better be well-formed XML
                 handler.endElement(element_name)
             else:
                 handler.addQuickElement(element_name, text, {'type': text_type}, tabs=tabs)
         else:
             handler.addQuickElement(element_name, data, tabs=tabs)
-
 
     def write_person_construct(self, handler, element_name, person):
         handler.characters("\t\t")
@@ -277,16 +178,13 @@ class AtomFeed(object):
         handler.endElement(element_name)
         handler.characters("\n")
 
-
     def write_link_construct(self, handler, link, tabs=1):
         if 'length' in link:
             link['length'] = str(link['length'])
         handler.addQuickElement(u'link', None, link, tabs=tabs)
 
-
     def write_category_construct(self, handler, category):
         handler.addQuickElement(u'category', None, category)
-
 
     def write_source(self, handler, data):
         handler.startElement(u'source', {})
@@ -315,13 +213,12 @@ class AtomFeed(object):
         handler.endElement(u'source')
         handler.characters("\n")
 
-
     def write_content(self, handler, data):
         if isinstance(data, tuple):
             content_dict, text = data
             if content_dict.get('type') == 'xhtml':
                 handler.startElement(u'content', content_dict)
-                handler._write(text) # write unescaped -- it had better be well-formed XML
+                handler._write(text)  # write unescaped -- it had better be well-formed XML
                 handler.endElement(u'content')
             else:
                 handler.addQuickElement(u'content', text, content_dict)
@@ -329,7 +226,6 @@ class AtomFeed(object):
         else:
             handler.characters("\t")
             handler.addQuickElement(u'content', data)
-
 
     def write(self, outfile, encoding):
         handler = SimplerXMLGenerator(outfile, encoding)
@@ -365,11 +261,9 @@ class AtomFeed(object):
         if not self.feed.get('hide_generator'):
             handler.addQuickElement(u'generator', GENERATOR_TEXT, GENERATOR_ATTR, tabs=2)
 
-
         self.write_items(handler)
 
         handler.endElement(u'feed')
-
 
     def write_items(self, handler):
         for item in self.items:
@@ -411,11 +305,9 @@ class AtomFeed(object):
             if item.get('dc_identifier'):
                 handler.addQuickElement(u'dcterms:identifier', item['dc_identifier'], tabs=2)
 
-
             handler.characters("\t")
             handler.endElement(u'entry')
             handler.characters("\n")
-
 
     def validate(self):
 
@@ -439,7 +331,7 @@ class AtomFeed(object):
 
         alternate_links = {}
         for link in self.feed.get('links'):
-            if link.get('rel') == 'alternate' or link.get('rel') == None:
+            if link.get('rel') == 'alternate' or link.get('rel') is None:
                 key = (link.get('type'), link.get('hreflang'))
                 if key in alternate_links:
                     raise ValidationError('alternate links must have unique type/hreflang')
@@ -479,7 +371,7 @@ class AtomFeed(object):
 
             alternate_links = {}
             for link in item.get('links'):
-                if link.get('rel') == 'alternate' or link.get('rel') == None:
+                if link.get('rel') == 'alternate' or link.get('rel') is None:
                     key = (link.get('type'), link.get('hreflang'))
                     if key in alternate_links:
                         raise ValidationError('alternate links must have unique type/hreflang')
@@ -500,9 +392,9 @@ class AtomFeed(object):
                         raise ValidationError('content with src cannot have type of text, html or xhtml')
                 if content_type:
                     if '/' in content_type and \
-                        not content_type.startswith('text/') and \
-                        not content_type.endswith('/xml') and not content_type.endswith('+xml') and \
-                        not content_type in ['application/xml-external-parsed-entity', 'application/xml-dtd']:
+                            not content_type.startswith('text/') and \
+                            not content_type.endswith('/xml') and not content_type.endswith('+xml') and \
+                            content_type not in ['application/xml-external-parsed-entity', 'application/xml-dtd']:
                         # @@@ check content is Base64
                         if not item.get('summary'):
                             raise ValidationError('content in Base64 requires a summary too')
@@ -515,76 +407,3 @@ class AtomFeed(object):
                     return
 
         return
-
-
-
-class LegacySyndicationFeed(AtomFeed):
-    """
-    Provides an SyndicationFeed-compatible interface in its __init__ and
-    add_item but is really a new AtomFeed object.
-    """
-
-    def __init__(self, title, link, description, language=None, author_email=None,
-            author_name=None, author_link=None, subtitle=None, categories=None,
-            feed_url=None, feed_copyright=None):
-
-        atom_id = link
-        title = title
-        categories = categories or []
-        updated = None # will be calculated
-        rights = feed_copyright
-        subtitle = subtitle
-        author_dict = {'name': author_name}
-        if author_link:
-            author_dict['uri'] = author_link
-        if author_email:
-            author_dict['email'] = author_email
-        authors = [author_dict]
-        if categories:
-            categories = [{'term': term} for term in categories]
-        links = [{'rel': 'alternate', 'href': link}]
-        if feed_url:
-            links.append({'rel': 'self', 'href': feed_url})
-        if language:
-            extra_attrs = {'xml:lang': language}
-        else:
-            extra_attrs = {}
-
-        # description ignored (as with Atom1Feed)
-
-        AtomFeed.__init__(self, atom_id, title, updated, rights=rights, subtitle=subtitle,
-                authors=authors, categories=categories, links=links, extra_attrs=extra_attrs)
-
-
-    def add_item(self, title, link, description, author_email=None,
-            author_name=None, author_link=None, pubdate=None, comments=None,
-            unique_id=None, enclosure=None, categories=None, item_copyright=None):
-
-        if unique_id:
-            atom_id = unique_id
-        else:
-            atom_id = get_tag_uri(link, pubdate)
-        title = title
-        updated = pubdate
-        categories = categories or []
-        if item_copyright:
-            rights = item_copyright
-        else:
-            rights = None
-        if description:
-            summary = 'html', description
-        else:
-            summary = None
-        author_dict = {'name': author_name}
-        if author_link:
-            author_dict['uri'] = author_link
-        if author_email:
-            author_dict['email'] = author_email
-        authors = [author_dict]
-        categories = [{'term': term} for term in categories]
-        links = [{'rel': 'alternate', 'href': link}]
-        if enclosure:
-            links.append({'rel': 'enclosure', 'href': enclosure.url, 'length': enclosure.length, 'type': enclosure.mime_type})
-
-        AtomFeed.add_item(self, atom_id, title, updated, rights=rights, summary=summary,
-                authors=authors, categories=categories, links=links)
