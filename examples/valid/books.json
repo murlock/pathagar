@@ -1,0 +1,17 @@
+[
+    {
+        "book_path": "The Dunwich Horror.epub",
+        "cover_path": "cover_path",
+        "a_title": "The Dunwich Horror",
+        "a_status": "Published",
+        "tags": ["tag1", "tag2", "tag3"]
+    },
+    {
+        "book_path": "Five Plays.epub"
+    },
+    {
+        "book_path": "toto",
+        "cover_path": "cover_path",
+        "a_status": "Invalid Status"
+    }
+]

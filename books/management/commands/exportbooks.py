@@ -37,35 +37,43 @@ logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
 class Command(BaseCommand):
-    help = "Dump collection in directory (CSV + books)"
+    help = "Dump collection in directory (CSV)"
     args = 'Directory Path'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--copy',
+                            action='store_true',
+                            dest='copy_file',
+                            default=False,
+                            help='Copy book')
+        parser.add_argument('filepath',
+                            help='PATH')
 
-    def _handle_csv(self, csvpath):
+
+    def _handle_csv(self, csvpath, *args, **options):
         """
         Export books into directory with CSV catalog
         WARN: does not handle tags
 
         """
 
-        csvfile = open(csvpath + "/catalog.csv", "w")
-        writer = csv.DictWriter(csvfile, ['filename', 'title', 'author', 'summary'])
-        writer.writeheader()
+        csvfile = open(csvpath, "w")
+        outputdir = os.path.basename(csvpath)
+        do_copy = options.get('copy_file')
 
-        for book in Book.objects.all():
-            shutil.copy(book.book_file.file.name, csvpath)
+        writer = csv.writer(csvfile)
 
-            entry = {'filename': os.path.basename(book.book_file.name).encode('utf-8'),
-                'a_title': book.a_title.encode('utf-8'),
-                'a_author': book.a_author.a_author.encode('utf-8'),
-                'a_summary': book.a_summary.encode('utf-8')}
+        for book in Book.objects.all(): #[0:5]:
+            path = book.book_file.path
+            if do_copy:
+                shutil.copy(path, outputdir)
+                path = os.path.basename(path)
+
+            entry = [path, book.a_title, book.a_author.a_author, book.a_summary]
             writer.writerow(entry)
         csvfile.close()
 
 
-    def handle(self, filepath='', *args, **options):
-        if filepath == '' or not os.path.exists(filepath):
-            raise CommandError("%r is not a valid path" % filepath)
-        filepath = os.path.abspath(filepath)
+    def handle(self, filepath, *args, **options):
+        self._handle_csv(filepath, *args, **options)
 
-        self._handle_csv(filepath)
