@@ -28,4 +28,3 @@ script:
 
 after_script:
     - codecov
-    - cat geckodriver.log

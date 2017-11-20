@@ -44,7 +44,6 @@ from sendfile import sendfile
 from books.search import simple_search, advanced_search
 from books.forms import BookForm, AddLanguageForm
 from books.models import TagGroup, Book, Author
-from books.popuphandler import handlePopAdd
 # FIXME: move opds in dedicated app
 from books.opds import page_qstring
 from books.opds import generate_catalog
@@ -55,9 +54,6 @@ from books.opds import generate_taggroups_catalog
 
 from books.app_settings import BOOK_PUBLISHED
 
-@login_required
-def add_language(request):
-    return handlePopAdd(request, AddLanguageForm, 'language')
 
 class BookDetailView(DetailView):
     model = Book

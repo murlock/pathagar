@@ -149,10 +149,10 @@ class Book(models.Model):
             if self.book_file.name.endswith('.epub'):
                 # get the cover path from the epub file
                 epub_file = Epub(self.book_file)
-                cover_path = epub_file.get_cover_image_path()
-                if cover_path is not None and os.path.exists(cover_path):
-                    cover_file = File(open(cover_path, "rb"))
-                    self.cover_img.save(os.path.basename(cover_path), # pylint: disable=no-member
+                cover_file, ext = epub_file.get_cover_image()
+                if cover_file:
+                    name = os.path.basename(self.a_title) + ext
+                    self.cover_img.save(name,  # pylint: disable=no-member
                                         cover_file)
                 epub_file.close()
 

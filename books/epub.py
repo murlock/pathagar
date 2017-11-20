@@ -34,10 +34,8 @@ class Epub(object):
         self._opfpath = None
         self._ncxpath = None
         self._basepath = None
-        self._tempdir = tempfile.mkdtemp()
 
-        if not self._verify():
-            print('Warning: This does not seem to be a valid epub file')
+        self._verify()
 
         self._get_opf()
         self._get_ncx()
@@ -45,23 +43,8 @@ class Epub(object):
         opffile = self._zobject.open(self._opfpath)
         self._info = epubinfo.EpubInfo(opffile)
 
-        self._unzip()
-
     def __del__(self):
-        if self._tempdir:
-            self.close()
-
-    def _unzip(self):
-        # This is broken upto python 2.7
-        # self._zobject.extractall(path = self._tempdir)
-        for name in self._zobject.namelist():
-            # Some weird zip file entries start with a slash,
-            # and we don't want to write to the root directory
-            name = name.lstrip(os.path.sep)
-            if name.endswith(os.path.sep) or name.endswith('\\'):
-                os.makedirs(os.path.join(self._tempdir, name), exist_ok=True)
-            else:
-                self._zobject.extract(name, self._tempdir)
+        self.close()
 
     def _get_opf(self):
         containerfile = self._zobject.open('META-INF/container.xml')
@@ -103,28 +86,22 @@ class Epub(object):
         if isinstance(self._file, str):
             self._file = os.path.abspath(self._file)
             if not os.path.exists(self._file):
-                return False
+                raise FileNotFoundError("No such file: %s" % self._file)
 
         self._zobject = zipfile.ZipFile(self._file)
+        # force a testzip to ensure that Zip is valid
+        # it was done by extraction step before
+        self._zobject.testzip()
 
         if not 'mimetype' in self._zobject.namelist():
-            return False
+            raise ValueError("Invalid EPUB file, mimetype is not available")
 
         mtypefile = self._zobject.open('mimetype')
         mimetype = mtypefile.readline().decode('utf-8')
 
         # Some files seem to have trailing characters
         if not mimetype.startswith('application/epub+zip'):
-            return False
-
-        return True
-
-    def get_basedir(self):
-        '''
-        Returns the base directory where the contents of the
-        epub has been unzipped
-        '''
-        return self._tempdir
+            raise ValueError("EPUB file has invalid mimetype: %s" % mimetype)
 
     def get_info(self):
         '''
@@ -132,14 +109,21 @@ class Epub(object):
         '''
         return self._info
 
-    def get_cover_image_path(self):
+    def get_cover_image(self):
+        '''
+        Returns a tuple file like object, name extension
+        '''
         if self._info.cover_image is None:
-            return None
+            return None, None
+        names = self._zobject.namelist()
+        img = self._info.cover_image
+        ext = os.path.splitext(img)[1]
+        assert not img.startswith('/')
         for subdir in [self._basepath, '']:
-            path = os.path.join(self._tempdir, subdir, self._info.cover_image)
-            if os.path.exists(path):
-                return path
-        return None
+            path = os.path.join(subdir, img)
+            if path in names:
+                return self._zobject.open(path), ext
+        return None, None
 
     def close(self):
         '''
@@ -148,5 +132,4 @@ class Epub(object):
         '''
         if self._zobject:
             self._zobject.close()
-        shutil.rmtree(self._tempdir)
-        self._tempdir = None
+        self._zobject = None

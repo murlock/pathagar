@@ -20,8 +20,6 @@ from books.models import Book, Language, Author
 
 
 class BookForm(ModelForm):
-    # dc_language = ModelChoiceField(Language.objects, widget=SelectWithPop)
-
     class Meta:
         model = Book
         exclude = ('mimetype', 'file_sha256sum', )

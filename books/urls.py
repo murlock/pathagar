@@ -26,10 +26,6 @@ urlpatterns = [
     url(r'^by-popularity/$', views.most_downloaded,
      {}, 'most_downloaded'),
 
-    # Tag groups:
-    url(r'^tags/groups.atom$', views.tags_listgroups,
-     {}, 'tags_listgroups'),
-
     # Book list Atom:
     url(r'^catalog.atom$', views.root,
      {'qtype': u'feed'}, 'root_feed'),
@@ -47,10 +43,11 @@ urlpatterns = [
      {'qtype': u'feed'}, 'most_downloaded_feed'),
 
     # Tag groups:
-    url(r'^tags/groups/(?P<group_slug>[-\w]+)/$', views.tags,
+    url(r'^tags-groups.atom$', views.tags_listgroups,
+     {}, 'tags_listgroups'),
+    url(r'^tags-groups/(?P<group_slug>[-\w]+)/$', views.tags,
      {}, 'tag_groups'),
-
-    url(r'^tags/groups/(?P<group_slug>[-\w]+).atom$', views.tags,
+    url(r'^tags-groups/(?P<group_slug>[-\w]+).atom$', views.tags,
      {'qtype': u'feed'}, 'tag_groups_feed'),
 
     # Tag list:
@@ -67,9 +64,6 @@ urlpatterns = [
 
     # Comments
     # FIXME (r'^comments/', include('django.contrib.comments.urls')),
-
-    # Add language:
-    url(r'^add/dc_language|language/$', views.add_language),
 ]
 
 
