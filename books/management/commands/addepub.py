@@ -81,9 +81,10 @@ class Command(BaseCommand):
                             lang.save()
                             break
                     else:
+                        lang = None
                         self.stdout.write(
                             self.style.WARNING(
-                                "No lang found for {1}".format(
+                                "No lang found for {0}".format(
                                     info.language)))
 
             # XXX: Hacks below
