@@ -102,7 +102,7 @@ class EpubInfo(): #TODO: Cover the entire DC range
     def _get_language(self):
         # TODO: iter
         try:
-            ret = self._get_data('.//{http://purl.org/dc/elements/1.1/}language')
+            ret = self._get_data('.//{http://purl.org/dc/elements/1.1/}language').lower()
         except AttributeError:
             return None
 
