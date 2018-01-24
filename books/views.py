@@ -33,7 +33,7 @@ from django.views.generic.edit import CreateView
 from django.views.generic.edit import FormView
 from django.views.generic.edit import DeleteView
 
-from pathagar.settings import BOOKS_PER_PAGE, AUTHORS_PER_PAGE
+from pathagar.settings import BOOKS_PER_PAGE, AUTHORS_PER_PAGE, ALLOW_USER_COMMENTS
 from django.conf import settings
 
 from taggit.models import Tag
@@ -58,6 +58,11 @@ from books.app_settings import BOOK_PUBLISHED
 class BookDetailView(DetailView):
     model = Book
     form_class = BookForm
+
+    def get_context_data(self, **kwargs):
+        context = super(BookDetailView, self).get_context_data(**kwargs)
+        context['allow_user_comments'] = ALLOW_USER_COMMENTS
+        return context
 
 class BookEditView(UpdateView):
     model = Book

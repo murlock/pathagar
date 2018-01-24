@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{# {% load comments %} #}
+{% load comments %}
 
 {% block title %}{{ book.a_title }} :: Pathagar Book Server{% endblock %}
 
@@ -68,7 +68,6 @@
 </p>
 </div>
 <hr>
-{% comment %}
 {% if allow_user_comments %}
 
 <div class="span-16">
@@ -114,7 +113,6 @@
 
 
 {% endif %}
-{% endcomment %}
 </div>
 
 <div class="span-6 last" id="sidebar">

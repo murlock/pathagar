@@ -63,14 +63,13 @@ urlpatterns = [
     url(r'^book/(?P<book_id>\d+)/download$', views.download_book, name='book_download'),
 
     # Comments
-    # FIXME (r'^comments/', include('django.contrib.comments.urls')),
+    url(r'^comments/', include('django_comments.urls')),
 ]
 
 
 if BOOKS_STATICS_VIA_DJANGO:
     from django.views.static import serve
     # Serve static media:
-    # urlpatterns += patterns('',
     urlpatterns += [
        url(r'^static_media/(?P<path>.*)$', serve,
            {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),

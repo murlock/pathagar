@@ -111,7 +111,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'taggit',
-    # 'django.contrib.comments', # DEPRECATED, use https://github.com/django/django-contrib-comments
+    'django_comments',
     'books',
 )
 

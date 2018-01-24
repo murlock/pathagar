@@ -1,4 +1,5 @@
 Django==1.11.6
 django-sendfile==0.3.11
-lxml==3.4.4
+lxml
 django-taggit==0.22.1
+django-contrib-comments==1.8.0
